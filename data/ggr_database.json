@@ -1,0 +1,36 @@
+{
+  "appState": {
+    "pin": "1234",
+    "currentPhaseIndex": 0,
+    "completedToday": {
+      "pretest": [],
+      "session1": [],
+      "session2": [],
+      "session3": [],
+      "session4": [],
+      "posttest": []
+    },
+    "groups": [
+      {
+        "name": "Team 1",
+        "members": ["Runner 1", "Runner 2", "Runner 3", "Runner 4", "Runner 5"]
+      },
+      {
+        "name": "Team 2",
+        "members": ["Runner 1", "Runner 2", "Runner 3", "Runner 4", "Runner 5"]
+      },
+      {
+        "name": "Team 3",
+        "members": ["Runner 1", "Runner 2", "Runner 3", "Runner 4", "Runner 5"]
+      },
+      {
+        "name": "Team 4",
+        "members": ["Runner 1", "Runner 2", "Runner 3", "Runner 4", "Runner 5"]
+      }
+    ],
+    "surveyResponses": [],
+    "taskProgress": {}
+  },
+  "logData": [],
+  "lastUpdated": "2026-10-29T00:00:00.000Z"
+}

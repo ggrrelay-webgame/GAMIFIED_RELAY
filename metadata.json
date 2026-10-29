@@ -1,0 +1,6 @@
+{
+  "name": "Gamified Grammar Relay",
+  "description": "Interactive grammar relay race for Binanuahan ES Grade 6 students with track map, 4 team groups with 5 runners each, relay handoffs, teacher analytics, and dynamic activity sync.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
