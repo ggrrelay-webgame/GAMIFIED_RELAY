@@ -888,7 +888,7 @@ export function parseMasterCSV(csvText: string): {
       const isCorIdx = auditHeaders.findIndex((h) => h.includes('is correct') || h.includes('score') || h.includes('status'));
 
       const id = idIdx >= 0 && fields[idIdx] ? fields[idIdx].trim() : `${Date.now()}-${Math.random().toString(36).substring(2, 7)}`;
-      const ts = tsIdx >= 0 && fields[tsIdx] ? fields[tsIdx].trim() : new Date().toISOString();
+      const ts = tsIdx >= 0 && fields[tsIdx] ? fields[tsIdx].trim() : formatExportDate();
       const rawPhase = phaseIdx >= 0 && fields[phaseIdx] ? fields[phaseIdx].trim() : 'session1';
 
       // Normalize phase key: e.g. "Pretest" -> "pretest", "Mission 1" -> "session1"
