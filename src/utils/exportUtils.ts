@@ -3,6 +3,22 @@ import { AppState, AttemptLog, SurveyResponse, RelayRole, TaskProgressRecord } f
 import { PHASES, BANK } from '../data/phases';
 import { getDepEdRating } from '../data/ggrCurriculum';
 
+function formatExportDate(dateInput: Date | string | number = new Date()): string {
+  const date = dateInput instanceof Date ? dateInput : new Date(dateInput);
+  if (Number.isNaN(date.getTime())) return String(dateInput);
+
+  return new Intl.DateTimeFormat('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+    hour12: true,
+  })
+    .format(date)
+    .replace(/,\s+(?=\d{1,2}:\d{2}\s*(AM|PM)$)/i, ' ');
+}
+
 export interface StudentWeekResult {
   studentName: string;
   teamName: string;
@@ -202,7 +218,7 @@ export async function generateExcelWorkbook(
 
   overviewSheet.mergeCells('A2:N2');
   const subtitleCell = overviewSheet.getCell('A2');
-  subtitleCell.value = `Grade 6 • Basic Sentence Construction & Parts of Speech • Coach Dash & 5 Relay Roles • Exported: ${new Date().toLocaleDateString()}`;
+  subtitleCell.value = `Grade 6 • Basic Sentence Construction & Parts of Speech • Coach Dash & 5 Relay Roles • Exported: ${formatExportDate()}`;
   subtitleCell.font = { name: 'Calibri', size: 11, italic: true, color: { argb: 'FFFFFFFF' } };
   subtitleCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1F9D68' } };
   subtitleCell.alignment = { horizontal: 'center', vertical: 'middle' };
@@ -656,7 +672,7 @@ export async function generateExcelWorkbook(
     row.getCell(11).value = l.correct ? 1 : 0;
     row.getCell(11).alignment = { horizontal: 'center' };
   });
-
+// F
   logsSheet.columns = [
     { width: 22 },
     { width: 22 },
@@ -689,7 +705,7 @@ export function generateMasterCSV(
   lines.push('# GAMIFIED GRAMMAR RELAY (GGR) — BINANUAHAN ELEMENTARY SCHOOL');
   lines.push('# Grade 6 — Basic Sentence Construction & Parts of Speech Recognition');
   lines.push('# Relay Roles: Reader -> Solver -> Checker -> Explainer -> Runner');
-  lines.push(`# Exported At: ${new Date().toISOString()}`);
+  lines.push(`# Exported At: ${formatExportDate()}`);
   lines.push('');
 
   // Section 2: Student Weekly Accuracy Matrix
