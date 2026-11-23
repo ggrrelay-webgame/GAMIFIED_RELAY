@@ -3,11 +3,11 @@ import { AppState, AttemptLog, SurveyResponse, RelayRole, TaskProgressRecord } f
 import { PHASES, BANK } from '../data/phases';
 import { getDepEdRating } from '../data/ggrCurriculum';
 
-function formatExportDate(dateInput: Date | string | number = new Date()): string {
+function formatTimestamp(dateInput: Date | string | number = new Date(), uppercase = false): string {
   const date = dateInput instanceof Date ? dateInput : new Date(dateInput);
   if (Number.isNaN(date.getTime())) return String(dateInput);
 
-  return new Intl.DateTimeFormat('en-US', {
+  const formatted = new Intl.DateTimeFormat('en-US', {
     month: 'short',
     day: 'numeric',
     year: 'numeric',
@@ -17,6 +17,8 @@ function formatExportDate(dateInput: Date | string | number = new Date()): strin
   })
     .format(date)
     .replace(/,\s+(?=\d{1,2}:\d{2}\s*(AM|PM)$)/i, ' ');
+
+  return uppercase ? formatted.toUpperCase() : formatted;
 }
 
 export interface StudentWeekResult {
@@ -140,7 +142,7 @@ export function calculateSessionDetail(
   });
 
   // Calculate stats per question
-  const questionStats = bankItems.map((item, idx) => {
+  const questionStats = bankItems.map((item) => {
     const cleanPrompt = item.p.replace(/\*\*/g, '').trim();
     const itemLogs = phaseLogs.filter(
       (l) => l.prompt.replace(/\*\*/g, '').trim() === cleanPrompt
@@ -218,7 +220,7 @@ export async function generateExcelWorkbook(
 
   overviewSheet.mergeCells('A2:N2');
   const subtitleCell = overviewSheet.getCell('A2');
-  subtitleCell.value = `Grade 6 • Basic Sentence Construction & Parts of Speech • Coach Dash & 5 Relay Roles • Exported: ${formatExportDate()}`;
+  subtitleCell.value = `Grade 6 • Basic Sentence Construction & Parts of Speech • Coach Dash & 5 Relay Roles • Exported: ${formatTimestamp()}`;
   subtitleCell.font = { name: 'Calibri', size: 11, italic: true, color: { argb: 'FFFFFFFF' } };
   subtitleCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1F9D68' } };
   subtitleCell.alignment = { horizontal: 'center', vertical: 'middle' };
@@ -372,20 +374,20 @@ export async function generateExcelWorkbook(
   });
 
   overviewSheet.columns = [
-    { width: 18 }, // Student Runner
-    { width: 14 }, // Team
-    { width: 11 }, // Runner #
-    { width: 14 }, // Pretest
-    { width: 14 }, // Mission 1
-    { width: 14 }, // Mission 2
-    { width: 14 }, // Mission 3
-    { width: 14 }, // Mission 4
-    { width: 14 }, // Posttest
-    { width: 14 }, // Mean Gain
-    { width: 15 }, // Overall
-    { width: 12 }, // Total Correct
-    { width: 14 }, // Total Answered
-    { width: 28 }, // DepEd Rating
+    { width: 18 },
+    { width: 14 },
+    { width: 11 },
+    { width: 14 },
+    { width: 14 },
+    { width: 14 },
+    { width: 14 },
+    { width: 14 },
+    { width: 14 },
+    { width: 14 },
+    { width: 15 },
+    { width: 12 },
+    { width: 14 },
+    { width: 28 },
   ];
 
   // -------------------------------------------------------------
@@ -472,7 +474,6 @@ export async function generateExcelWorkbook(
       row.getCell(5).value = stu.correct;
       row.getCell(5).alignment = { horizontal: 'center' };
 
-      // Highlight Accuracy score with color-coded conditional formatting
       const accCell = row.getCell(6);
       if (stu.attempts > 0) {
         accCell.value = stu.accuracy / 100;
@@ -487,18 +488,16 @@ export async function generateExcelWorkbook(
       }
       accCell.alignment = { horizontal: 'center', vertical: 'middle' };
 
-      // DepEd Rating
       const stCell = row.getCell(7);
       if (stu.attempts === 0) {
         stCell.value = 'Pending';
         stCell.font = { italic: true, color: { argb: 'FF777777' } };
       } else {
         const rating = getDepEdRating(stu.accuracy);
-        stCell.value = rating.label.split(' ')[0]; // short rating
+        stCell.value = rating.label.split(' ')[0];
         stCell.font = { bold: true };
       }
 
-      // Question breakdown: Did the student get it right or not?
       bankItems.forEach((_, qIdx) => {
         const qNumber = qIdx + 1;
         const cell = row.getCell(8 + qIdx);
@@ -520,7 +519,6 @@ export async function generateExcelWorkbook(
         }
       });
 
-      // Borders
       const totalCols = 7 + bankItems.length;
       for (let c = 1; c <= totalCols; c++) {
         row.getCell(c).border = {
@@ -596,7 +594,7 @@ export async function generateExcelWorkbook(
 
     surveys.forEach((sv, idx) => {
       const row = surveySheet.getRow(idx + 2);
-      row.getCell(1).value = sv.timestamp;
+      row.getCell(1).value = formatTimestamp(sv.timestamp);
       row.getCell(2).value = sv.teamName;
       row.getCell(3).value = `${sv.q1Rating} / 5`;
       row.getCell(4).value = `${sv.q2Rating} / 5`;
@@ -624,7 +622,7 @@ export async function generateExcelWorkbook(
 
   const rawHeaders = [
     'Attempt ID',
-    'Timestamp (ISO)',
+    'Timestamp',
     'Phase / Session Key',
     'Week Intervention',
     'Team Name',
@@ -647,7 +645,7 @@ export async function generateExcelWorkbook(
     const matchedPhase = PHASES.find((p) => p.key === l.phase);
 
     row.getCell(1).value = l.id;
-    row.getCell(2).value = l.ts;
+    row.getCell(2).value = formatTimestamp(l.ts);
     row.getCell(3).value = l.phase;
     row.getCell(4).value = matchedPhase?.weekLabel || l.weekLabel || 'Session';
     row.getCell(5).value = l.team;
@@ -672,7 +670,7 @@ export async function generateExcelWorkbook(
     row.getCell(11).value = l.correct ? 1 : 0;
     row.getCell(11).alignment = { horizontal: 'center' };
   });
-// F
+
   logsSheet.columns = [
     { width: 22 },
     { width: 22 },
@@ -705,7 +703,7 @@ export function generateMasterCSV(
   lines.push('# GAMIFIED GRAMMAR RELAY (GGR) — BINANUAHAN ELEMENTARY SCHOOL');
   lines.push('# Grade 6 — Basic Sentence Construction & Parts of Speech Recognition');
   lines.push('# Relay Roles: Reader -> Solver -> Checker -> Explainer -> Runner');
-  lines.push(`# Exported At: ${formatExportDate()}`);
+  lines.push(`# Exported At: ${formatTimestamp()}`);
   lines.push('');
 
   // Section 2: Student Weekly Accuracy Matrix
@@ -755,14 +753,13 @@ export function generateMasterCSV(
     lines.push('"Timestamp","Team Name","Enjoyed Activities (1-5)","Better Than Worksheets (1-5)","Want to Use Again (1-5)","Feedback"');
     surveys.forEach((sv) => {
       lines.push(
-        `"${sv.timestamp}","${sv.teamName}","${sv.q1Rating}","${sv.q2Rating}","${sv.q3Rating}","${(sv.comments || '').replace(/"/g, '""')}"`
+        `"${formatTimestamp(sv.timestamp)}","${sv.teamName}","${sv.q1Rating}","${sv.q2Rating}","${sv.q3Rating}","${(sv.comments || '').replace(/"/g, '""')}"`
       );
     });
   }
 
   lines.push('');
   lines.push('# --- ITEM-BY-ITEM ATTEMPT AUDIT LOGS ---');
-  // Including Attempt ID so any deleted row in the CSV can be mapped precisely back to the database
   const logHeaders = [
     'Attempt ID',
     'Timestamp',
@@ -785,7 +782,7 @@ export function generateMasterCSV(
     const ph = PHASES.find((p) => p.key === l.phase);
     const row = [
       l.id,
-      l.ts,
+      formatTimestamp(l.ts),
       l.phase,
       ph?.weekLabel || l.weekLabel || 'Session',
       l.team,
@@ -868,11 +865,9 @@ export function parseMasterCSV(csvText: string): {
 
     if (inAuditLogs) {
       if (auditHeaders.length === 0) {
-        // First line is header
         auditHeaders = fields.map((f) => f.trim().toLowerCase());
         continue;
       }
-      // Map row to AttemptLog
       const idIdx = auditHeaders.findIndex((h) => h.includes('attempt id') || h === 'id');
       const tsIdx = auditHeaders.findIndex((h) => h.includes('timestamp'));
       const phaseIdx = auditHeaders.findIndex((h) => h.includes('phase') || h.includes('leg'));
@@ -887,11 +882,14 @@ export function parseMasterCSV(csvText: string): {
       const correctAnsIdx = auditHeaders.findIndex((h) => h.includes('correct answer'));
       const isCorIdx = auditHeaders.findIndex((h) => h.includes('is correct') || h.includes('score') || h.includes('status'));
 
-      const id = idIdx >= 0 && fields[idIdx] ? fields[idIdx].trim() : `${Date.now()}-${Math.random().toString(36).substring(2, 7)}`;
-      const ts = tsIdx >= 0 && fields[tsIdx] ? fields[tsIdx].trim() : formatExportDate();
-      const rawPhase = phaseIdx >= 0 && fields[phaseIdx] ? fields[phaseIdx].trim() : 'session1';
+      const id = idIdx >= 0 && fields[idIdx]?.trim()
+        ? fields[idIdx].trim()
+        : `${Date.now()}-${Math.random().toString(36).substring(2, 7)}`;
+      const ts = formatTimestamp(
+        tsIdx >= 0 && fields[tsIdx]?.trim() ? fields[tsIdx].trim() : new Date()
+      );
+      const rawPhase = phaseIdx >= 0 && fields[phaseIdx]?.trim() ? fields[phaseIdx].trim() : 'session1';
 
-      // Normalize phase key: e.g. "Pretest" -> "pretest", "Mission 1" -> "session1"
       let phaseKey = rawPhase.toLowerCase();
       const foundPhase = PHASES.find(
         (p) => p.key === phaseKey || p.label.toLowerCase() === phaseKey || p.weekLabel?.toLowerCase() === phaseKey
@@ -900,11 +898,11 @@ export function parseMasterCSV(csvText: string): {
         phaseKey = foundPhase.key;
       }
 
-      const team = teamIdx >= 0 && fields[teamIdx] ? fields[teamIdx].trim() : 'Team 1';
-      const player = playerIdx >= 0 && fields[playerIdx] ? fields[playerIdx].trim() : 'Runner 1';
-      const prompt = promptIdx >= 0 && fields[promptIdx] ? fields[promptIdx].trim() : '';
-      const chosen = chosenIdx >= 0 && fields[chosenIdx] ? fields[chosenIdx].trim() : '';
-      const correctAnswer = correctAnsIdx >= 0 && fields[correctAnsIdx] ? fields[correctAnsIdx].trim() : '';
+      const team = teamIdx >= 0 && fields[teamIdx]?.trim() ? fields[teamIdx].trim() : 'Team 1';
+      const player = playerIdx >= 0 && fields[playerIdx]?.trim() ? fields[playerIdx].trim() : 'Runner 1';
+      const prompt = promptIdx >= 0 && fields[promptIdx]?.trim() ? fields[promptIdx].trim() : '';
+      const chosen = chosenIdx >= 0 && fields[chosenIdx]?.trim() ? fields[chosenIdx].trim() : '';
+      const correctAnswer = correctAnsIdx >= 0 && fields[correctAnsIdx]?.trim() ? fields[correctAnsIdx].trim() : '';
 
       let correct = false;
       if (isCorIdx >= 0 && fields[isCorIdx]) {
@@ -934,7 +932,7 @@ export function parseMasterCSV(csvText: string): {
         ts,
         phase: phaseKey,
         phaseLabel: foundPhase?.label || rawPhase,
-        weekLabel: weekIdx >= 0 && fields[weekIdx] ? fields[weekIdx].trim() : foundPhase?.weekLabel,
+        weekLabel: weekIdx >= 0 && fields[weekIdx]?.trim() ? fields[weekIdx].trim() : foundPhase?.weekLabel,
         team,
         player,
         runnerIndex,
@@ -946,11 +944,10 @@ export function parseMasterCSV(csvText: string): {
         correct,
       });
     } else if (inSurvey) {
-      // First row might be header
       if (fields[0].toLowerCase().includes('timestamp')) continue;
       parsedSurveys.push({
         id: `survey-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
-        timestamp: fields[0] || new Date().toISOString(),
+        timestamp: formatTimestamp(fields[0]?.trim() || new Date()),
         teamName: fields[1] || 'Team 1',
         q1Rating: parseInt(fields[2], 10) || 5,
         q2Rating: parseInt(fields[3], 10) || 5,
@@ -967,11 +964,6 @@ export function parseMasterCSV(csvText: string): {
   };
 }
 
-/**
- * Re-evaluates which teams have actually completed each phase based on current logs.
- * If an activity or attempt was deleted, the team is removed from completedToday[phaseKey],
- * making the activity ACCESSIBLE AGAIN!
- */
 export function recalculateCompletedToday(
   appState: AppState,
   logs: AttemptLog[]
@@ -984,8 +976,6 @@ export function recalculateCompletedToday(
       const teamLogs = logs.filter(
         (l) => l.team === group.name && l.phase === ph.key
       );
-      // Team has completed this activity if they have logged all required items
-      // (Pretest/Posttest = 6 items; Missions 1-4 = 5 items)
       if (teamLogs.length >= ph.itemCount) {
         newCompletedToday[ph.key].push(gIdx);
       }
@@ -995,12 +985,6 @@ export function recalculateCompletedToday(
   return newCompletedToday;
 }
 
-/**
- * Re-evaluates and synchronizes taskProgress records across all phases and teams
- * based strictly on the current logs and completedToday state.
- * If logs or activities are deleted, the taskProgress is wiped or recalculated
- * so that deleted records disappear completely from Overview and Standings!
- */
 export function recalculateTaskProgress(
   groups: Array<{ name: string; members: string[] }>,
   completedToday: Record<string, number[]>,
@@ -1020,7 +1004,6 @@ export function recalculateTaskProgress(
         .sort((a, b) => new Date(a.ts).getTime() - new Date(b.ts).getTime());
 
       if (teamLogs.length === 0 && !isDone) {
-        // If there are no logs and not completed, the task record is reset
         result[ph.key][g.name] = {
           teamIndex: gIdx,
           teamName: g.name,
@@ -1032,7 +1015,7 @@ export function recalculateTaskProgress(
           totalAttempts: 0,
           accuracy: 0,
           durationSeconds: undefined,
-          lastActiveTs: now,
+          lastActiveTs: formatTimestamp(now),
         };
         return;
       }
@@ -1059,14 +1042,13 @@ export function recalculateTaskProgress(
         correctAnswers: correctCount,
         totalAttempts: totalCount,
         accuracy,
-        startedAt: firstTs,
-        completedAt: isDone ? lastTs : undefined,
+        startedAt: formatTimestamp(firstTs),
+        completedAt: isDone ? formatTimestamp(lastTs) : undefined,
         durationSeconds: isDone ? durationSeconds : undefined,
-        lastActiveTs: lastTs,
+        lastActiveTs: formatTimestamp(lastTs),
       };
     });
 
-    // Compute completionOrder and speedRank for completed teams
     const completedList = Object.values(result[ph.key])
       .filter((r) => r.status === 'completed' && r.completedAt)
       .sort((a, b) => new Date(a.completedAt!).getTime() - new Date(b.completedAt!).getTime());
@@ -1086,7 +1068,6 @@ export function recalculateTaskProgress(
   return result;
 }
 
-// Download Trigger Helper
 export function downloadFile(blob: Blob, filename: string) {
   const url = URL.createObjectURL(blob);
   const link = document.createElement('a');
